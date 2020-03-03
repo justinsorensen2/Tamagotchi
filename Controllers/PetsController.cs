@@ -12,6 +12,7 @@ namespace Tamagotchi.Controllers
   [ApiController]
   public class PetsController : ControllerBase
   {
+    public PetTracker tracker { get; set; } = new PetTracker();
     public DatabaseContext db { get; set; } = new DatabaseContext();
     [HttpGet]
     public List<Pet> ViewAllPets()
@@ -21,8 +22,23 @@ namespace Tamagotchi.Controllers
     [HttpGet("{id}")]
     public Pet ViewPetById(int id)
     {
-      var pet = new Pet();
-      return pet = db.Pets.FirstOrDefault(p => p.Id == id);
+      var pet = db.Pets.FirstOrDefault(p => p.Id == id);
+      pet.LastInteractedWith = DateTime.Now;
+      var deadBool = tracker.Neglected(pet);
+      while (pet.IsDead == false)
+      {
+        if (deadBool == true)
+        {
+          pet.IsDead = true;
+          db.SaveChanges();
+        }
+        else
+        {
+          pet.LastInteractedWith = DateTime.Now;
+          db.SaveChanges();
+        }
+      }
+      return pet;
     }
     [HttpPost]
     public Pet AddAPet(Pet newPet)
@@ -34,36 +50,85 @@ namespace Tamagotchi.Controllers
     [HttpPatch("{id}/play")]
     public Pet PlayWithPet(int id)
     {
-      var playPet = db.Pets.FirstOrDefault(p => p.Id == id);
-      playPet.HappinessLevel = playPet.HappinessLevel + 5;
-      playPet.HungerLevel = playPet.HungerLevel + 3;
-      db.SaveChanges();
-      return playPet;
+      var pet = db.Pets.FirstOrDefault(p => p.Id == id);
+      var deadBool = tracker.SuddenPetDeathSyndrome();
+      while (pet.IsDead == false)
+      {
+        if (deadBool == true)
+        {
+          pet.IsDead = true;
+          db.SaveChanges();
+        }
+        else
+        {
+          pet.HappinessLevel += 5;
+          pet.HungerLevel += 3;
+          pet.LastInteractedWith = DateTime.Now;
+          db.SaveChanges();
+        }
+      }
+      return pet;
     }
     [HttpPatch("{id}/feed")]
     public Pet FeedAPet(int id)
     {
-      var feedPet = db.Pets.FirstOrDefault(p => p.Id == id);
-      feedPet.HappinessLevel = feedPet.HappinessLevel + 3;
-      feedPet.HungerLevel = feedPet.HungerLevel - 5;
-      db.SaveChanges();
-      return feedPet;
+      var pet = db.Pets.FirstOrDefault(p => p.Id == id);
+      pet.LastInteractedWith = DateTime.Now;
+      var deadBool = tracker.SuddenPetDeathSyndrome();
+      var neglectedBool = tracker.Neglected(pet);
+      while (pet.IsDead == false)
+      {
+        if (deadBool == false && neglectedBool == false)
+        {
+          pet.HappinessLevel += 3;
+          pet.HungerLevel -= 5;
+          db.SaveChanges();
+        }
+        else
+        {
+          pet.IsDead = true;
+          db.SaveChanges();
+        }
+      }
+      return pet;
+
     }
     [HttpPatch("{id}/scold")]
     public Pet ScoldAPet(int id)
     {
-      var scoldPet = db.Pets.FirstOrDefault(p => p.Id == id);
-      scoldPet.HappinessLevel = scoldPet.HappinessLevel - 5;
-      db.SaveChanges();
-      return scoldPet;
+      var pet = db.Pets.FirstOrDefault(p => p.Id == id);
+      pet.LastInteractedWith = DateTime.Now;
+      var deadBool = tracker.SuddenPetDeathSyndrome();
+      var neglectedBool = tracker.Neglected(pet);
+      while (pet.IsDead == false)
+      {
+        if (deadBool == false && neglectedBool == false)
+        {
+          pet.HappinessLevel -= 5;
+          db.SaveChanges();
+          return pet;
+        }
+        else
+        {
+          pet.IsDead = true;
+          db.SaveChanges();
+          return pet;
+        }
+      }
+      return pet;
     }
     [HttpDelete("{id}")]
-    public Pet DeleteAPet(int id)
+    public ActionResult DeleteAPet(int id)
     {
       var killPet = db.Pets.FirstOrDefault(p => p.Id == id);
       db.Pets.Remove(killPet);
       db.SaveChanges();
-      return killPet;
+      return Ok();
+    }
+    [HttpGet]
+    public List<Pet> ViewLiving()
+    {
+      return db.Pets.Where(p => p.IsDead == false).ToList();
     }
   }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using Tamagotchi.Models;
 
 namespace Tamagotchi
 {
@@ -9,6 +11,9 @@ namespace Tamagotchi
     public DateTime Birthday { get; set; }
     public int HungerLevel { get; set; }
     public int HappinessLevel { get; set; }
+    public bool IsDead { get; set; } = false;
+    public DateTime DeathDate { get; set; } = DateTime.Now;
+    public DateTime LastInteractedWith { get; set; } = DateTime.Now;
 
   }
 }
