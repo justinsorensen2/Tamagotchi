@@ -125,7 +125,7 @@ namespace Tamagotchi.Controllers
       db.SaveChanges();
       return Ok();
     }
-    [HttpGet]
+    [HttpGet("living")]
     public List<Pet> ViewLiving()
     {
       return db.Pets.Where(p => p.IsDead == false).ToList();
